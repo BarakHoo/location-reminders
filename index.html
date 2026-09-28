@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>תזכורות מיקום</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+        
+        .tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            background: white;
+            color: #4facfe;
+            font-weight: bold;
+        }
+        
+        .tab:hover {
+            background: #e9ecef;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        input, textarea, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #4facfe;
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            transition: all 0.3s;
+            margin: 5px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(79, 172, 254, 0.4);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+        }
+        
+        .btn-danger:hover {
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+        }
+        
+        #map {
+            height: 300px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border: 2px solid #e9ecef;
+        }
+        
+        .reminder-card {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+        }
+        
+        .reminder-card:hover {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        
+        .reminder-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        .reminder-location {
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        .reminder-distance {
+            background: #4facfe;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+        
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .location-info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 10px;
+            }
+            
+            .header {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+            
+            #map {
+                height: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📍 תזכורות מיקום</h1>
+            <p>תזכירו לעצמכם דברים בדיוק במקום הנכון</p>
+        </div>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('add')">הוסף תזכורת</button>
+            <button class="tab" onclick="switchTab('list')">התזכורות שלי</button>
+            <button class="tab" onclick="switchTab('status')">סטטוס</button>
+        </div>
+        
+        <div class="content">
+            <!-- הוספת תזכורת -->
+            <div id="add-tab" class="tab-content active">
+                <h2>🎯 תזכורת חדשה</h2>
+                <form id="reminder-form">
+                    <div class="form-group">
+                        <label for="reminder-text">מה להזכיר?</label>
+                        <textarea id="reminder-text" placeholder="לדוגמה: קנה חלב ולחם" required></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="radius">רדיוס (מטרים)</label>
+                        <select id="radius">
+                            <option value="50">50 מטר</option>
+                            <option value="100" selected>100 מטר</option>
+                            <option value="200">200 מטר</option>
+                            <option value="500">500 מטר</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>בחר מיקום על המפה:</label>
+                        <div id="map"></div>
+                        <p style="color: #666; margin-top: 10px;">לחץ על המפה כדי לבחור מיקום לתזכורת</p>
+                        <div id="selected-location" class="location-info" style="display: none;">
+                            <strong>מיקום נבחר:</strong> <span id="location-coords"></span>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn">💾 שמור תזכורת</button>
+                </form>
+            </div>
+            
+            <!-- רשימת תזכורות -->
+            <div id="list-tab" class="tab-content">
+                <h2>📋 התזכורות שלי</h2>
+                <div id="reminders-list">
+                    <p style="text-align: center; color: #666; padding: 40px;">עדיין לא הוספת תזכורות</p>
+                </div>
+            </div>
+            
+            <!-- סטטוס -->
+            <div id="status-tab" class="tab-content">
+                <h2>📊 סטטוס המערכת</h2>
+                <div id="location-status">
+                    <p>בודק סטטוס...</p>
+                </div>
+                <button class="btn" onclick="getCurrentLocation()">📍 בדוק מיקום נוכחי</button>
+                <button class="btn" onclick="requestNotificationPermission()">🔔 אשר התראות</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // משתנים גלובליים
+        let map;
+        let selectedLocation = null;
+        let currentPosition = null;
+        let reminders = JSON.parse(localStorage.getItem('locationReminders') || '[]');
+        let watchId = null;
+
+        // אתחול האפליקציה
+        document.addEventListener('DOMContentLoaded', function() {
+            initMap();
+            updateRemindersList();
+            updateLocationStatus();
+            requestPermissions();
+            startLocationTracking();
+            
+            document.getElementById('reminder-form').addEventListener('submit', handleFormSubmit);
+        });
+
+        // בקשת הרשאות
+        async function requestPermissions() {
+            try {
+                await requestNotificationPermission();
+                await getCurrentLocation();
+            } catch (error) {
+                console.log('שגיאה בבקשת הרשאות:', error);
+            }
+        }
+
+        // בקשת הרשאה להתראות
+        async function requestNotificationPermission() {
+            if ('Notification' in window) {
+                const permission = await Notification.requestPermission();
+                updateLocationStatus();
+                return permission === 'granted';
+            }
+            return false;
+        }
+
+        // אתחול המפה
+        function initMap() {
+            // מרכז המפה בישראל
+            map = L.map('map').setView([31.5, 34.75], 8);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            // מאזין לקליק על המפה
+            map.on('click', function(e) {
+                selectedLocation = {
+                    lat: e.latlng.lat,
+                    lng: e.latlng.lng
+                };
+                
+                // נקה סמנים קודמים
+                map.eachLayer(function(layer) {
+                    if (layer instanceof L.Marker) {
+                        map.removeLayer(layer);
+                    }
+                });
+                
+                // הוסף סמן חדש
+                L.marker([selectedLocation.lat, selectedLocation.lng])
+                    .addTo(map)
+                    .bindPopup('מיקום התזכורת')
+                    .openPopup();
+                
+                // עדכן את המידע
+                document.getElementById('selected-location').style.display = 'block';
+                document.getElementById('location-coords').textContent = 
+                    `${selectedLocation.lat.toFixed(6)}, ${selectedLocation.lng.toFixed(6)}`;
+            });
+        }
+
+        // קבלת מיקום נוכחי
+        function getCurrentLocation() {
+            return new Promise((resolve, reject) => {
+                if (!navigator.geolocation) {
+                    reject(new Error('הדפדפן לא תומך במיקום GPS'));
+                    return;
+                }
+
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        currentPosition = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude
+                        };
+                        
+                        // מרכז את המפה למיקום הנוכחי
+                        map.setView([currentPosition.lat, currentPosition.lng], 15);
+                        
+                        updateLocationStatus();
+                        resolve(currentPosition);
+                    },
+                    function(error) {
+                        updateLocationStatus();
+                        reject(error);
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 60000
+                    }
+                );
+            });
+        }
+
+        // מעקב אחר מיקום
+        function startLocationTracking() {
+            if (!navigator.geolocation) return;
+
+            watchId = navigator.geolocation.watchPosition(
+                function(position) {
+                    currentPosition = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    };
+                    
+                    checkReminders();
+                    updateLocationStatus();
+                },
+                function(error) {
+                    console.log('שגיאה במעקב מיקום:', error);
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 30000,
+                    maximumAge: 60000
+                }
+            );
+        }
+
+        // בדיקת תזכורות
+        function checkReminders() {
+            if (!currentPosition) return;
+
+            reminders.forEach(reminder => {
+                if (reminder.triggered) return;
+
+                const distance = calculateDistance(
+                    currentPosition.lat, currentPosition.lng,
+                    reminder.location.lat, reminder.location.lng
+                );
+
+                if (distance <= reminder.radius) {
+                    triggerReminder(reminder);
+                }
+            });
+        }
+
+        // הפעלת תזכורת
+        function triggerReminder(reminder) {
+            reminder.triggered = true;
+            reminder.triggeredAt = new Date().toISOString();
+            
+            // שמירה
+            localStorage.setItem('locationReminders', JSON.stringify(reminders));
+            
+            // התראה
+            if (Notification.permission === 'granted') {
+                new Notification('🎯 תזכורת מיקום!', {
+                    body: reminder.text,
+                    icon: '📍'
+                });
+            }
+            
+            // עדכון הרשימה
+            updateRemindersList();
+            
+            console.log('הופעלה תזכורת:', reminder.text);
+        }
+
+        // חישוב מרחק בין שתי נקודות
+        function calculateDistance(lat1, lng1, lat2, lng2) {
+            const R = 6371000; // רדיוס כדורהארץ במטרים
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLng = (lng2 - lng1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                    Math.sin(dLng/2) * Math.sin(dLng/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        // שליחת הטופס
+        function handleFormSubmit(e) {
+            e.preventDefault();
+            
+            const text = document.getElementById('reminder-text').value.trim();
+            const radius = parseInt(document.getElementById('radius').value);
+            
+            if (!text) {
+                alert('אנא הכנס טקסט תזכורת');
+                return;
+            }
+            
+            if (!selectedLocation) {
+                alert('אנא בחר מיקום על המפה');
+                return;
+            }
+            
+            // יצירת תזכורת חדשה
+            const reminder = {
+                id: Date.now(),
+                text: text,
+                location: selectedLocation,
+                radius: radius,
+                created: new Date().toISOString(),
+                triggered: false
+            };
+            
+            reminders.push(reminder);
+            localStorage.setItem('locationReminders', JSON.stringify(reminders));
+            
+            // איפוס הטופס
+            document.getElementById('reminder-form').reset();
+            selectedLocation = null;
+            document.getElementById('selected-location').style.display = 'none';
+            
+            // נקה המפה
+            map.eachLayer(function(layer) {
+                if (layer instanceof L.Marker) {
+                    map.removeLayer(layer);
+                }
+            });
+            
+            updateRemindersList();
+            
+            // הודעת הצלחה
+            const status = document.createElement('div');
+            status.className = 'status success';
+            status.textContent = '✅ התזכורת נשמרה בהצלחה!';
+            document.getElementById('add-tab').insertBefore(status, document.getElementById('add-tab').firstChild);
+            
+            setTimeout(() => status.remove(), 3000);
+        }
+
+        // עדכון רשימת התזכורות
+        function updateRemindersList() {
+            const container = document.getElementById('reminders-list');
+            
+            if (reminders.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #666; padding: 40px;">עדיין לא הוספת תזכורות</p>';
+                return;
+            }
+            
+            container.innerHTML = reminders.map(reminder => {
+                let distanceText = '';
+                if (currentPosition) {
+                    const distance = calculateDistance(
+                        currentPosition.lat, currentPosition.lng,
+                        reminder.location.lat, reminder.location.lng
+                    );
+                    distanceText = `<div class="reminder-distance">מרחק: ${Math.round(distance)} מטר</div>`;
+                }
+                
+                const statusText = reminder.triggered ? 
+                    '<span style="color: green;">✅ הופעלה</span>' : 
+                    '<span style="color: orange;">⏳ פעילה</span>';
+                
+                return `
+                    <div class="reminder-card">
+                        <div class="reminder-title">${reminder.text}</div>
+                        <div class="reminder-location">
+                            📍 ${reminder.location.lat.toFixed(4)}, ${reminder.location.lng.toFixed(4)}
+                            • רדיוס: ${reminder.radius}מ׳
+                        </div>
+                        ${distanceText}
+                        <div style="margin: 10px 0;">${statusText}</div>
+                        <button class="btn btn-danger" onclick="deleteReminder(${reminder.id})">
+                            🗑️ מחק
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // מחיקת תזכורת
+        function deleteReminder(id) {
+            if (confirm('האם אתה בטוח שברצונך למחוק את התזכורת?')) {
+                reminders = reminders.filter(r => r.id !== id);
+                localStorage.setItem('locationReminders', JSON.stringify(reminders));
+                updateRemindersList();
+            }
+        }
+
+        // עדכון סטטוס המיקום
+        function updateLocationStatus() {
+            const container = document.getElementById('location-status');
+            let status = '';
+            
+            // בדיקת תמיכה ב-GPS
+            if (!navigator.geolocation) {
+                status += '<div class="status error">❌ הדפדפן לא תומך במיקום GPS</div>';
+            } else {
+                status += '<div class="status success">✅ הדפדפן תומך במיקום GPS</div>';
+            }
+            
+            // בדיקת הרשאות התראות
+            if (!('Notification' in window)) {
+                status += '<div class="status error">❌ הדפדפן לא תומך בהתראות</div>';
+            } else if (Notification.permission === 'granted') {
+                status += '<div class="status success">✅ הרשאת התראות אושרה</div>';
+            } else if (Notification.permission === 'denied') {
+                status += '<div class="status error">❌ הרשאת התראות נדחתה</div>';
+            } else {
+                status += '<div class="status warning">⚠️ טרם ניתנה הרשאה להתראות</div>';
+            }
+            
+            // מיקום נוכחי
+            if (currentPosition) {
+                status += `<div class="status success">
+                    📍 מיקום נוכחי: ${currentPosition.lat.toFixed(6)}, ${currentPosition.lng.toFixed(6)}
+                </div>`;
+            } else {
+                status += '<div class="status warning">⚠️ טרם זוהה מיקום נוכחי</div>';
+            }
+            
+            // סטטיסטיקות
+            const activeReminders = reminders.filter(r => !r.triggered).length;
+            const triggeredReminders = reminders.filter(r => r.triggered).length;
+            
+            status += `<div class="location-info">
+                📊 <strong>סטטיסטיקות:</strong><br>
+                תזכורות פעילות: ${activeReminders}<br>
+                תזכורות שהופעלו: ${triggeredReminders}<br>
+                סה״כ תזכורות: ${reminders.length}
+            </div>`;
+            
+            container.innerHTML = status;
+        }
+
+        // החלפת לשוניות
+        function switchTab(tabName) {
+            // הסתר את כל הלשוניות
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // הצג את הלשונית הנבחרת
+            document.getElementById(tabName + '-tab').classList.add('active');
+            event.target.classList.add('active');
+            
+            // עדכון נתונים בהתאם
+            if (tabName === 'list') {
+                updateRemindersList();
+            } else if (tabName === 'status') {
+                updateLocationStatus();
+            }
+        }
+
+        // ניקוי מעקב מיקום בסגירת העמוד
+        window.addEventListener('beforeunload', function() {
+            if (watchId !== null) {
+                navigator.geolocation.clearWatch(watchId);
+            }
+        });
+    </script>
+</body>
+</html>
